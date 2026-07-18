@@ -1,0 +1,32 @@
+8CAE4C	Raspberry Pi Trading Ltd
+B827EB	Raspberry Pi Foundation
+001A11	Google, Inc.
+3C5AB4	Google, Inc.
+F4F5DB	Google, Inc.
+DCA632	Apple, Inc.
+C869CD	Apple, Inc.
+0016B6	Apple, Inc.
+B8D7AF	Samsung Electronics Co.,Ltd
+380195	Samsung Electronics Co.,Ltd
+C81826	SAMSUNG ELECTRO-MECHANICS(THAILAND)
+A85B78	XIAOMI Electronics,CO.,LTD
+8C4500	Xiaomi Communications Co Ltd
+886B6E	Xiaomi Communications Co Ltd
+801382	Tenda Technology Co., Ltd.
+C83A35	Tenda Technology Co., Ltd.
+F832E4	ASUSTek COMPUTER INC.
+3C7C3F	ASUSTek COMPUTER INC.
+F04347	Espressif Inc.
+A020A6	Espressif Inc.
+540F57	Sony Mobile Communications AB
+944696	Sony Mobile Communications AB
+C4A699	Amazon Technologies Inc.
+74C246	Amazon Technologies Inc.
+70EE50	HUAWEI TECHNOLOGIES CO.,LTD
+404D8E	HUAWEI TECHNOLOGIES CO.,LTD
+C03E0F	TP-LINK TECHNOLOGIES CO.,LTD.
+C006C3	TP-LINK TECHNOLOGIES CO.,LTD.
+001132	Synology Incorporated
+9009DA	Synology Incorporated
+001558	Foxconn
+541379	Foxconn

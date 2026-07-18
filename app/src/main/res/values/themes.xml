@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TendaWifiMonitor" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.TendaWifiMonitor.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0A0E1A</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
+        <item name="postSplashScreenTheme">@style/Theme.TendaWifiMonitor</item>
+    </style>
+</resources>
