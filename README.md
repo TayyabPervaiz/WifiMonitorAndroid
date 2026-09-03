@@ -42,7 +42,11 @@ This project was built following **Clean Architecture** principles and modern An
 
 ## 📱 Screenshots
 
-*(Add screenshots of your Settings, History, and Dashboard tabs here)*
+<img width="324" height="709" alt="image" src="https://github.com/user-attachments/assets/a767756a-972c-4fd9-bf24-a08564eaaa93" /> <img width="330" height="504" alt="image" src="https://github.com/user-attachments/assets/92e7484c-7d49-456c-95e8-24a2d93260f5" />
+<img width="344" height="696" alt="image" src="https://github.com/user-attachments/assets/c190e1fe-f58c-40db-9567-bea26044328d" />
+
+
+
 
 ## 🤝 Let's Connect
 I built this project to deepen my understanding of Android system services, complex Compose layouts, and reactive data streams. Feel free to reach out if you have any questions or feedback!
