@@ -39,6 +39,14 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    testOptions {
+        unitTests {
+            // android.util.Log (and other framework stubs) throw by default in
+            // local unit tests; return default values instead.
+            isReturnDefaultValues = true
+        }
     }
 }
 
@@ -78,14 +86,15 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
 
-    // Vico Charts
-    implementation(libs.vico.compose)
-    implementation(libs.vico.compose.m3)
-    implementation(libs.vico.core)
+    // AndroidX Security (encrypted storage for the router password)
+    implementation(libs.androidx.security.crypto)
 
     // Glance Widget
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
 
     debugImplementation(libs.androidx.ui.tooling)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    testImplementation(libs.mockk)
 }

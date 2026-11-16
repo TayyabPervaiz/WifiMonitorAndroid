@@ -4,3 +4,19 @@
 /app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/
 /build/
 *.hprof
+
+# IDE and local workspace files
+.idea/workspace.xml
+.idea/caches/
+
+# Media & local assets
+/Screen Shots/
+/docs/
+
+# Local reports & chat logs
+yesterdays_chat_history.md
+project-analysis-report.md
+technical-project-report.md
+ui-redesign-report.md
+ui-redesign-mockups.html
+.freebuff/
