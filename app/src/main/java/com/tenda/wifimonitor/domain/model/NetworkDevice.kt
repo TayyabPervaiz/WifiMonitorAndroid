@@ -14,7 +14,11 @@ data class NetworkDevice(
     val customIcon: String? = null, // emoji string
     val firstSeen: Date = Date(),
     val lastSeen: Date = Date(),
-    val signalStrength: Int? = null, // ping ms
+    val isLocal: Boolean = false,
+    val deviceId: String = "",
+    val isBlocked: Boolean = false,
+    val downloadLimitKbps: Float? = null,
+    val uploadLimitKbps: Float? = null,
 ) {
     val displayName: String
         get() = customName ?: hostname.takeIf { it.isNotBlank() && it != "Unknown" } ?: macAddress

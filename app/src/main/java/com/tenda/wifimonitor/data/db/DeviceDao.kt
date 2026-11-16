@@ -17,6 +17,15 @@ interface DeviceDao {
     @Query("SELECT * FROM devices WHERE macAddress = :mac")
     suspend fun getDevice(mac: String): DeviceEntity?
 
+    @Query("SELECT * FROM devices WHERE deviceId = :deviceId")
+    suspend fun getByDeviceId(deviceId: String): DeviceEntity?
+
+    @Query("DELETE FROM devices WHERE macAddress = :macAddress")
+    suspend fun deleteByMacAddress(macAddress: String)
+
+    @Query("UPDATE device_sessions SET deviceId = :newDeviceId WHERE deviceId = :oldDeviceId")
+    suspend fun reassignSessions(oldDeviceId: String, newDeviceId: String)
+
     @Query("SELECT * FROM devices WHERE macAddress = :mac")
     fun observeDevice(mac: String): Flow<DeviceEntity?>
 
@@ -44,6 +53,21 @@ interface DeviceDao {
     @Query("UPDATE devices SET deviceType = :type WHERE macAddress = :mac")
     suspend fun updateDeviceType(mac: String, type: String)
 
+    @Query("UPDATE devices SET isBlocked = :blocked WHERE macAddress = :mac")
+    suspend fun updateBlockedStatus(mac: String, blocked: Boolean)
+
+    @Query("UPDATE devices SET isBlocked = :blocked WHERE deviceId = :deviceId")
+    suspend fun updateBlockedStatusByDeviceId(deviceId: String, blocked: Boolean)
+
+    @Query("UPDATE devices SET downloadLimitKbps = :downLimit, uploadLimitKbps = :upLimit WHERE deviceId = :deviceId")
+    suspend fun updateBandwidthLimits(deviceId: String, downLimit: Float?, upLimit: Float?)
+
+    @Query("UPDATE devices SET downloadLimitKbps = :downLimit, uploadLimitKbps = :upLimit WHERE macAddress = :mac")
+    suspend fun updateBandwidthLimitsByMac(mac: String, downLimit: Float?, upLimit: Float?)
+
+    @Query("SELECT * FROM devices WHERE isBlocked = 1")
+    suspend fun getBlockedDevicesSync(): List<DeviceEntity>
+
     @Query("SELECT COUNT(*) FROM devices WHERE isOnline = 1")
     fun observeOnlineCount(): Flow<Int>
 
@@ -56,6 +80,9 @@ interface DeviceDao {
 
     @Query("SELECT * FROM device_sessions WHERE macAddress = :mac ORDER BY connectedAt DESC")
     fun observeSessionsForDevice(mac: String): Flow<List<DeviceSessionEntity>>
+
+    @Query("SELECT * FROM device_sessions WHERE deviceId = :deviceId ORDER BY connectedAt DESC")
+    fun observeSessionsForDeviceId(deviceId: String): Flow<List<DeviceSessionEntity>>
 
     @Insert
     suspend fun insertSession(session: DeviceSessionEntity): Long
@@ -77,6 +104,22 @@ interface DeviceDao {
 
     @Query("DELETE FROM device_sessions WHERE connectedAt < :cutoff")
     suspend fun pruneOldSessions(cutoff: Long)
+
+    // ── Timed Blocks ──────────────────────────────────────────────────────────
+    @Query("SELECT * FROM timed_blocks ORDER BY unblockAt ASC")
+    fun observeAllTimedBlocks(): Flow<List<TimedBlockEntity>>
+
+    @Query("SELECT * FROM timed_blocks WHERE macAddress = :mac")
+    suspend fun getTimedBlock(mac: String): TimedBlockEntity?
+
+    @Query("SELECT * FROM timed_blocks WHERE unblockAt <= :now")
+    suspend fun getExpiredTimedBlocks(now: Long): List<TimedBlockEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTimedBlock(block: TimedBlockEntity)
+
+    @Query("DELETE FROM timed_blocks WHERE macAddress = :mac")
+    suspend fun deleteTimedBlock(mac: String)
 }
 
 data class HourlyCount(val hour: String, val count: Int)

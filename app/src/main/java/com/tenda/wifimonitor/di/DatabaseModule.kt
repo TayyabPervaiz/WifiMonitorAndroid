@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.tenda.wifimonitor.data.db.AppDatabase
 import com.tenda.wifimonitor.data.db.DeviceDao
+import com.tenda.wifimonitor.data.db.KnownMacDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,10 +20,20 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "wifi_monitor.db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(
+                AppDatabase.MIGRATION_1_2,
+                AppDatabase.MIGRATION_2_3,
+                AppDatabase.MIGRATION_3_4,
+                AppDatabase.MIGRATION_4_5,
+                AppDatabase.MIGRATION_5_6,
+            )
             .build()
 
     @Provides
     @Singleton
     fun provideDeviceDao(db: AppDatabase): DeviceDao = db.deviceDao()
+
+    @Provides
+    @Singleton
+    fun provideKnownMacDao(db: AppDatabase): KnownMacDao = db.knownMacDao()
 }

@@ -9,7 +9,8 @@ data class DeviceSession(
     val hostname: String,
     val connectedAt: Date,
     val disconnectedAt: Date? = null,
-    val durationMs: Long? = null
+    val durationMs: Long? = null,
+    val deviceId: String? = null,
 ) {
     val isActive: Boolean get() = disconnectedAt == null
 

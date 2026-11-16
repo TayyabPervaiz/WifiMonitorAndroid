@@ -1,12 +1,17 @@
 package com.tenda.wifimonitor.data.db
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.tenda.wifimonitor.domain.model.DeviceType
 import com.tenda.wifimonitor.domain.model.NetworkDevice
 import java.util.Date
+import java.util.UUID
 
-@Entity(tableName = "devices")
+@Entity(
+    tableName = "devices",
+    indices = [Index(value = ["deviceId"])]
+)
 data class DeviceEntity(
     @PrimaryKey
     val macAddress: String,
@@ -20,7 +25,10 @@ data class DeviceEntity(
     val customIcon: String? = null,
     val firstSeen: Long = System.currentTimeMillis(),
     val lastSeen: Long = System.currentTimeMillis(),
-    val signalStrength: Int? = null,
+    val deviceId: String = UUID.randomUUID().toString(),
+    val isBlocked: Boolean = false,
+    val downloadLimitKbps: Float? = null,
+    val uploadLimitKbps: Float? = null,
 ) {
     fun toDomain() = NetworkDevice(
         macAddress = macAddress,
@@ -34,7 +42,10 @@ data class DeviceEntity(
         customIcon = customIcon,
         firstSeen = Date(firstSeen),
         lastSeen = Date(lastSeen),
-        signalStrength = signalStrength,
+        deviceId = deviceId,
+        isBlocked = isBlocked,
+        downloadLimitKbps = downloadLimitKbps,
+        uploadLimitKbps = uploadLimitKbps,
     )
 }
 
@@ -50,5 +61,8 @@ fun NetworkDevice.toEntity() = DeviceEntity(
     customIcon = customIcon,
     firstSeen = firstSeen.time,
     lastSeen = lastSeen.time,
-    signalStrength = signalStrength,
+    deviceId = if (deviceId.isNotBlank()) deviceId else java.util.UUID.randomUUID().toString(),
+    isBlocked = isBlocked,
+    downloadLimitKbps = downloadLimitKbps,
+    uploadLimitKbps = uploadLimitKbps,
 )
