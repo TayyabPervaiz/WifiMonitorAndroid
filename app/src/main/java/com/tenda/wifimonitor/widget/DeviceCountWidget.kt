@@ -32,7 +32,15 @@ class DeviceCountWidget : GlanceAppWidget() {
             val db = androidx.room.Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java, "wifi_monitor.db"
-            ).build()
+            )
+                .addMigrations(
+                    AppDatabase.MIGRATION_1_2,
+                    AppDatabase.MIGRATION_2_3,
+                    AppDatabase.MIGRATION_3_4,
+                    AppDatabase.MIGRATION_4_5,
+                    AppDatabase.MIGRATION_5_6,
+                )
+                .build()
             db.deviceDao().observeOnlineCount().firstOrNull() ?: 0
         } catch (_: Exception) {
             0

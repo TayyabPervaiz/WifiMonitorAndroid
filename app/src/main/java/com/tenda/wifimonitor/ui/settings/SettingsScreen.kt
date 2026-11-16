@@ -4,13 +4,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -18,11 +18,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.tenda.wifimonitor.ui.components.ScreenHeader
+import com.tenda.wifimonitor.ui.components.SectionCard
 import com.tenda.wifimonitor.ui.theme.*
 
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    showBack: Boolean = true,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -33,30 +36,15 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState()),
     ) {
         // Header
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color(0xFF0E1830), Background)))
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp, bottom = 16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, null, tint = OnSurfaceVariant)
-                }
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Settings",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = OnBackground,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
+        ScreenHeader(
+            title = "Settings",
+            showBack = showBack,
+            onBack = onBack,
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -66,7 +54,7 @@ fun SettingsScreen(
                 value = state.routerUrl,
                 onValueChange = viewModel::updateUrl,
                 label = { Text("Router URL") },
-                leadingIcon = { Icon(Icons.Default.Router, null, tint = Primary) },
+                leadingIcon = { Icon(Icons.Default.Router, null, tint = MaterialTheme.colorScheme.primary) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = textFieldColors(),
@@ -76,12 +64,12 @@ fun SettingsScreen(
                 value = state.routerPassword,
                 onValueChange = viewModel::updatePassword,
                 label = { Text("Admin Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, null, tint = Primary) },
+                leadingIcon = { Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary) },
                 trailingIcon = {
                     IconButton(onClick = { showPassword = !showPassword }) {
                         Icon(
                             if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            null, tint = OnSurfaceVariant
+                            null, tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -97,16 +85,16 @@ fun SettingsScreen(
             ToggleRow(
                 icon = Icons.Default.Wifi,
                 title = "Enable Monitoring",
-                subtitle = "Background network scanning",
+                subtitle = "Scans your network in the background",
                 checked = state.monitoringEnabled,
                 onCheckedChange = viewModel::setMonitoringEnabled,
             )
-            HorizontalDivider(color = SurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
 
             Text(
                 "Scan Interval",
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -122,11 +110,23 @@ fun SettingsScreen(
                     RadioButton(
                         selected = state.pollingInterval == secs,
                         onClick = { viewModel.setPollingInterval(secs) },
-                        colors = RadioButtonDefaults.colors(selectedColor = Primary)
+                        colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                     )
-                    Text(label, style = MaterialTheme.typography.bodyMedium, color = OnSurface)
+                    Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
+        }
+
+        // ── Security & Protection ───────────────────────────────────────────
+        SettingsSection(title = "Security & Protection") {
+            ToggleRow(
+                icon = Icons.Default.Security,
+                title = "Auto-Block Unknown Devices",
+                subtitle = "Instantly block unrecognized MACs on the router to neutralize MAC randomization bypass",
+                checked = state.autoBlockUnknownDevices,
+                onCheckedChange = viewModel::setAutoBlockUnknownDevices,
+                iconTint = MaterialTheme.colorScheme.primary,
+            )
         }
 
         // ── Alerts ──────────────────────────────────────────────────────────
@@ -137,11 +137,11 @@ fun SettingsScreen(
                 subtitle = "Get notified when unknown devices connect",
                 checked = state.intruderAlertEnabled,
                 onCheckedChange = viewModel::setIntruderAlertEnabled,
-                iconTint = Danger,
+                iconTint = MaterialTheme.colorScheme.error,
             )
-            HorizontalDivider(color = SurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
             ToggleRow(
-                icon = Icons.Default.VolumeUp,
+                icon = Icons.AutoMirrored.Filled.VolumeUp,
                 title = "Alert Sound",
                 subtitle = "Play sound for new device notifications",
                 checked = state.soundEnabled,
@@ -158,7 +158,7 @@ fun SettingsScreen(
                 checked = state.darkTheme,
                 onCheckedChange = viewModel::setDarkTheme,
             )
-            HorizontalDivider(color = SurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
             ToggleRow(
                 icon = Icons.Default.Palette,
                 title = "Material You",
@@ -175,8 +175,8 @@ fun SettingsScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Wifi Monitor", style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariant)
-            Text("Version 1.0 · Tenda F3 N300", style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariant.copy(0.5f))
+            Text("Wifi Monitor", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Version 1.0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(Modifier.height(40.dp))
@@ -196,18 +196,11 @@ private fun SettingsSection(
         Text(
             title.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = Primary,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp, start = 4.dp),
         )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceCard)
-                .padding(16.dp),
-            content = content,
-        )
+        SectionCard(contentPadding = PaddingValues(16.dp), content = content)
     }
 }
 
@@ -218,7 +211,7 @@ private fun ToggleRow(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    iconTint: Color = Primary,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -227,17 +220,17 @@ private fun ToggleRow(
     ) {
         Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, color = OnBackground, fontWeight = FontWeight.Medium)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Primary,
-                uncheckedThumbColor = OnSurfaceVariant,
-                uncheckedTrackColor = SurfaceVariant,
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
         )
     }
@@ -246,8 +239,8 @@ private fun ToggleRow(
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun textFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = Primary,
-    focusedLabelColor = Primary,
-    unfocusedBorderColor = OnSurfaceVariant.copy(0.3f),
-    unfocusedLabelColor = OnSurfaceVariant,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.3f),
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
 )

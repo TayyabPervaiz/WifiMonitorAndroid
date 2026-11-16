@@ -2,68 +2,99 @@ package com.tenda.wifimonitor.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
+private val DarkColors = darkColorScheme(
     primary = Primary,
-    onPrimary = Color(0xFF003731),
+    onPrimary = Color(0xFF00312C),
     primaryContainer = PrimaryContainer,
     onPrimaryContainer = OnPrimaryContainer,
     secondary = Accent,
     onSecondary = Color(0xFF3D2800),
-    secondaryContainer = Color(0xFF563D00),
+    secondaryContainer = Color(0xFF4E3600),
     onSecondaryContainer = Color(0xFFFFDEA3),
-    tertiary = Color(0xFF7B61FF),
-    onTertiary = Color(0xFF1A0060),
+    tertiary = Purple,
+    onTertiary = Color(0xFF17005A),
     error = Danger,
-    onError = Color(0xFF690021),
+    onError = Color(0xFF4A0018),
     errorContainer = DangerDark,
-    onErrorContainer = Color(0xFFFFD8DC),
+    onErrorContainer = Color(0xFFFFDADF),
     background = Background,
     onBackground = OnBackground,
     surface = Surface,
     onSurface = OnSurface,
     surfaceVariant = SurfaceVariant,
     onSurfaceVariant = OnSurfaceVariant,
-    outline = Color(0xFF2D3D55),
-    outlineVariant = Color(0xFF1E2D45),
+    surfaceContainerLowest = Background,
+    surfaceContainerLow = Surface,
+    surfaceContainer = SurfaceCard,
+    surfaceContainerHigh = SurfaceVariant,
+    surfaceContainerHighest = SurfaceElevated,
+    outline = Hairline,
+    outlineVariant = Color(0xFF1A2436),
+    inverseSurface = OnBackground,
+    inverseOnSurface = Background,
+    inversePrimary = PrimaryDark,
+    scrim = Color(0xFF000000),
 )
 
-private val LightColorScheme = lightColorScheme(
+private val LightColors = lightColorScheme(
     primary = PrimaryDark,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFB2F5EA),
     onPrimaryContainer = Color(0xFF00372F),
     secondary = AccentDark,
     onSecondary = Color.White,
-    background = Color(0xFFF5F7FA),
-    onBackground = Color(0xFF0D1420),
-    surface = Color.White,
-    onSurface = Color(0xFF0D1420),
-    surfaceVariant = Color(0xFFEEF2F8),
-    onSurfaceVariant = Color(0xFF4A5568),
-    error = Danger,
+    secondaryContainer = Color(0xFFFFE7B8),
+    onSecondaryContainer = Color(0xFF3D2800),
+    tertiary = Color(0xFF6B5BD6),
+    onTertiary = Color.White,
+    error = DangerDark,
     onError = Color.White,
+    errorContainer = Color(0xFFFFDADF),
+    onErrorContainer = Color(0xFF400013),
+    background = LightBackground,
+    onBackground = LightOnBackground,
+    surface = LightSurface,
+    onSurface = LightOnSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFBFCFE),
+    surfaceContainer = Color.White,
+    surfaceContainerHigh = LightSurfaceVariant,
+    surfaceContainerHighest = Color(0xFFE4EAF3),
+    outline = Color(0xFFB9C3D4),
+    outlineVariant = LightHairline,
+    inverseSurface = LightOnBackground,
+    inverseOnSurface = LightBackground,
+    inversePrimary = Primary,
+    scrim = Color(0xFF000000),
 )
 
 @Composable
 fun WifiMonitorTheme(
     darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (darkTheme) dynamicDarkColorScheme(LocalView.current.context)
             else dynamicLightColorScheme(LocalView.current.context)
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        darkTheme -> DarkColors
+        else -> LightColors
     }
 
     val view = LocalView.current
@@ -77,6 +108,12 @@ fun WifiMonitorTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,
-        content = content
+        shapes = AppShapes,
+        content = {
+            CompositionLocalProvider(
+                LocalSemanticColors provides if (darkTheme) DarkSemanticColors else LightSemanticColors,
+                content = content,
+            )
+        },
     )
 }

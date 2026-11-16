@@ -23,6 +23,8 @@ data class DashboardUiState(
     val unknownCount: Int = 0,
     val wanIp: String = "…",
     val routerUptime: String = "…",
+    val downloadSpeedKbps: Float = 0f,
+    val uploadSpeedKbps: Float = 0f,
     val filter: DeviceFilter = DeviceFilter.ONLINE,
     val searchQuery: String = "",
     val error: String? = null,
@@ -50,13 +52,14 @@ class DashboardViewModel @Inject constructor(
             DeviceFilter.ALL -> s.allDevices
             DeviceFilter.UNKNOWN -> s.allDevices.filter { !it.isWhitelisted }
         }
-        if (s.searchQuery.isBlank()) base
+        val list = if (s.searchQuery.isBlank()) base
         else base.filter { d ->
             d.displayName.contains(s.searchQuery, ignoreCase = true) ||
                     d.ipAddress.contains(s.searchQuery) ||
                     d.macAddress.contains(s.searchQuery, ignoreCase = true) ||
                     d.manufacturer.contains(s.searchQuery, ignoreCase = true)
         }
+        list.sortedWith(compareByDescending<NetworkDevice> { it.isLocal }.thenBy { it.displayName.lowercase() })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -83,11 +86,25 @@ class DashboardViewModel @Inject constructor(
     private fun fetchRouterStatus() {
         viewModelScope.launch {
             try {
-                repository.getRouterStatus()?.let { status ->
-                    _state.update { it.copy(
-                        wanIp = status.wanIp,
-                        routerUptime = status.uptime,
-                    )}
+                repository.getFullRouterStatus()?.let { status ->
+                    _state.update {
+                        it.copy(
+                            wanIp = status.wanIp,
+                            routerUptime = status.uptime,
+                            downloadSpeedKbps = status.downloadSpeedKbps,
+                            uploadSpeedKbps = status.uploadSpeedKbps,
+                        )
+                    }
+                } ?: run {
+                    // Fallback to basic status if full status returns null
+                    repository.getRouterStatus()?.let { status ->
+                        _state.update {
+                            it.copy(
+                                wanIp = status.wanIp,
+                                routerUptime = status.uptime,
+                            )
+                        }
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -126,7 +143,7 @@ class DashboardViewModel @Inject constructor(
             preferences.setMonitoringEnabled(enabled)
             if (enabled) {
                 val interval = preferences.pollingIntervalSecs.firstOrNull() ?: 30L
-                NetworkMonitorWorker.schedule(context, interval)
+                NetworkMonitorWorker.schedule(context)
                 NetworkScanService.start(context)
             } else {
                 NetworkMonitorWorker.cancel(context)

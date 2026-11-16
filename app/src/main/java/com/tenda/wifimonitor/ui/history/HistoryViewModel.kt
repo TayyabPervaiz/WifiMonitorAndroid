@@ -48,7 +48,8 @@ class HistoryViewModel @Inject constructor(
         return sessions.filter {
             it.hostname.contains(q, ignoreCase = true) ||
             it.macAddress.contains(q, ignoreCase = true) ||
-            it.ipAddress.contains(q)
+            it.ipAddress.contains(q) ||
+            (it.deviceId?.contains(q, ignoreCase = true) == true)
         }
     }
 }

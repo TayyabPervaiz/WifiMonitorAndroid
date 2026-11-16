@@ -55,7 +55,7 @@ class SetupViewModel @Inject constructor(
                     preferences.setRouterPassword(state.password)
                     preferences.setRouterUrl(state.routerUrl)
                     preferences.setSetupComplete(true)
-                    NetworkMonitorWorker.schedule(context, 30L)
+                    NetworkMonitorWorker.schedule(context)
                     NetworkScanService.start(context)
                     _uiState.value = _uiState.value.copy(isLoading = false, success = true)
                 } else {

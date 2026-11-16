@@ -2,24 +2,41 @@ package com.tenda.wifimonitor.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Using system default with custom weights (Inter-like feel)
+/**
+ * Type scale. Uses the system font for a clean, dependency-free look, with
+ * tightened tracking on headings and a defined label/body rhythm.
+ */
 val AppTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
+        fontSize = 54.sp,
+        lineHeight = 62.sp,
+        letterSpacing = (-0.5).sp,
+    ),
+    displayMedium = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Bold,
+        fontSize = 42.sp,
+        lineHeight = 50.sp,
+        letterSpacing = (-0.25).sp,
+    ),
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Bold,
+        fontSize = 34.sp,
+        lineHeight = 42.sp,
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
+        fontSize = 30.sp,
+        lineHeight = 38.sp,
+        letterSpacing = (-0.25).sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
@@ -36,15 +53,15 @@ val AppTypography = Typography(
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
+        fontSize = 20.sp,
+        lineHeight = 26.sp,
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.1.sp,
     ),
     titleSmall = TextStyle(
         fontFamily = FontFamily.Default,
@@ -78,9 +95,16 @@ val AppTypography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
-    labelSmall = TextStyle(
+    labelMedium = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.4.sp,
+    ),
+    labelSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 11.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,

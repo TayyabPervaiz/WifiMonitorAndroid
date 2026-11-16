@@ -41,11 +41,8 @@ fun SetupScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0A0E1A), Color(0xFF0E1830), Color(0xFF0A0E1A))
-                )
-            )
+            .background(headerBrush())
+            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
         Column(
             modifier = Modifier
@@ -64,31 +61,36 @@ fun SetupScreen(
                     .clip(RoundedCornerShape(28.dp))
                     .background(
                         Brush.radialGradient(
-                            listOf(Primary.copy(0.3f), Color.Transparent)
+                            listOf(MaterialTheme.colorScheme.primary.copy(0.3f), Color.Transparent)
                         )
                     )
                     .border(
                         2.dp,
-                        Brush.linearGradient(listOf(Primary, Primary.copy(0.2f))),
+                        Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(0.2f))),
                         RoundedCornerShape(28.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📡", fontSize = 52.sp)
+                Icon(
+                    imageVector = Icons.Default.Router,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(52.dp),
+                )
             }
 
             Spacer(Modifier.height(28.dp))
 
             Text(
-                text = "WiFi Monitor",
+                text = "Tenda WiFi Monitor",
                 style = MaterialTheme.typography.headlineLarge,
-                color = OnBackground,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.ExtraBold,
             )
             Text(
-                text = "Tenda F3 Companion",
+                text = "Network Monitor",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Primary,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
             )
 
@@ -97,7 +99,7 @@ fun SetupScreen(
             Text(
                 text = "Connect your app to the router to start monitoring your network",
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
 
@@ -108,14 +110,14 @@ fun SetupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(SurfaceCard)
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = "Router Login",
                     style = MaterialTheme.typography.titleMedium,
-                    color = OnBackground,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                 )
 
@@ -125,13 +127,13 @@ fun SetupScreen(
                     onValueChange = viewModel::onPasswordChange,
                     label = { Text("Router Admin Password") },
                     placeholder = { Text("Enter password") },
-                    leadingIcon = { Icon(Icons.Default.Lock, null, tint = Primary) },
+                    leadingIcon = { Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary) },
                     trailingIcon = {
                         IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
                                 if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                 null,
-                                tint = OnSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     },
@@ -141,11 +143,11 @@ fun SetupScreen(
                     isError = state.error != null,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        focusedLabelColor = Primary,
-                        unfocusedBorderColor = OnSurfaceVariant.copy(0.4f),
-                        unfocusedLabelColor = OnSurfaceVariant,
-                        errorBorderColor = Danger,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f),
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        errorBorderColor = MaterialTheme.colorScheme.error,
                     ),
                     shape = RoundedCornerShape(12.dp),
                 )
@@ -153,7 +155,7 @@ fun SetupScreen(
                 // Advanced settings
                 TextButton(
                     onClick = { showAdvanced = !showAdvanced },
-                    colors = ButtonDefaults.textButtonColors(contentColor = OnSurfaceVariant)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                 ) {
                     Icon(
                         if (showAdvanced) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -168,12 +170,12 @@ fun SetupScreen(
                         value = state.routerUrl,
                         onValueChange = viewModel::onUrlChange,
                         label = { Text("Router URL") },
-                        leadingIcon = { Icon(Icons.Default.Router, null, tint = Primary) },
+                        leadingIcon = { Icon(Icons.Default.Router, null, tint = MaterialTheme.colorScheme.primary) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary,
-                            focusedLabelColor = Primary,
-                            unfocusedBorderColor = OnSurfaceVariant.copy(0.4f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f),
                         ),
                         shape = RoundedCornerShape(12.dp),
                     )
@@ -186,13 +188,13 @@ fun SetupScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Danger.copy(0.15f))
+                                .background(MaterialTheme.colorScheme.error.copy(0.15f))
                                 .padding(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(Icons.Default.Error, null, tint = Danger, modifier = Modifier.size(18.dp))
-                            Text(err, style = MaterialTheme.typography.bodySmall, color = Danger)
+                            Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                            Text(err, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -203,15 +205,15 @@ fun SetupScreen(
                     enabled = !state.isLoading,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Primary,
-                        contentColor = Color(0xFF003731),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     ),
                     shape = RoundedCornerShape(14.dp),
                 ) {
                     if (state.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
-                            color = Color(0xFF003731),
+                            color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp,
                         )
                         Spacer(Modifier.width(8.dp))
@@ -231,15 +233,15 @@ fun SetupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Primary.copy(0.08f))
+                    .background(MaterialTheme.colorScheme.primary.copy(0.08f))
                     .padding(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(Icons.Default.Info, null, tint = Primary, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 Text(
                     "Your password is stored encrypted on this device only and never sent anywhere except your local router.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 

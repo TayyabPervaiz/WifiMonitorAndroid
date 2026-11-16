@@ -17,16 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.tenda.wifimonitor.domain.model.DeviceSession
 import com.tenda.wifimonitor.ui.components.EmptyState
+import com.tenda.wifimonitor.ui.components.ScreenHeader
+import com.tenda.wifimonitor.ui.components.SearchField
 import com.tenda.wifimonitor.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -35,6 +34,7 @@ import java.util.*
 fun DeviceHistoryScreen(
     onBack: () -> Unit,
     onDeviceClick: (String) -> Unit,
+    showBack: Boolean = true,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -42,12 +42,11 @@ fun DeviceHistoryScreen(
     // Stable remembered formatters
     val dayFormatter = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
-    val headerGradient = remember { Brush.verticalGradient(listOf(Color(0xFF0E1830), Background)) }
 
-    // Group sessions by Device (MAC Address)
+    // Group sessions by Device (deviceId falling back to macAddress)
     val groupedByDevice: List<Pair<DeviceSession, List<DeviceSession>>> = remember(state.filteredSessions) {
         state.filteredSessions
-            .groupBy { it.macAddress }
+            .groupBy { it.deviceId ?: it.macAddress }
             .entries
             .map { (_, sessions) ->
                 // Sort sessions for each device from newest to oldest
@@ -59,86 +58,52 @@ fun DeviceHistoryScreen(
             .sortedByDescending { it.first.connectedAt }
     }
 
-    val expandedMacs = remember { mutableStateListOf<String>() }
+    val expandedDeviceKeys = remember { mutableStateListOf<String>() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // ── Header ────────────────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(headerGradient)
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp, bottom = 16.dp)
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, null, tint = OnSurfaceVariant)
-                    }
-                    Spacer(Modifier.width(8.dp))
+        ScreenHeader(
+            title = "Connection History",
+            showBack = showBack,
+            onBack = onBack,
+            actions = {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
                     Text(
-                        "Connection History",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = OnBackground,
-                        fontWeight = FontWeight.Bold,
+                        text = "${groupedByDevice.size} devices",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.weight(1f))
-                    Surface(color = SurfaceCard, shape = RoundedCornerShape(12.dp)) {
-                        Text(
-                            "${groupedByDevice.size} devices",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = OnSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
                 }
-
-                // ── Search Bar ────────────────────────────────────────────────
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
+            },
+            footer = {
+                SearchField(
                     value = state.searchQuery,
                     onValueChange = viewModel::setSearch,
-                    placeholder = {
-                        Text("Search by name, MAC or IP…", color = OnSurfaceVariant.copy(0.5f))
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, null, tint = OnSurfaceVariant)
-                    },
-                    trailingIcon = if (state.searchQuery.isNotBlank()) {
-                        {
-                            IconButton(onClick = { viewModel.setSearch("") }) {
-                                Icon(Icons.Default.Clear, null, tint = OnSurfaceVariant)
-                            }
-                        }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Primary,
-                        unfocusedBorderColor = SurfaceVariant,
-                        focusedContainerColor = SurfaceCard,
-                        unfocusedContainerColor = SurfaceCard,
-                    ),
-                    singleLine = true,
+                    placeholder = "Search by name, MAC or IP…",
                 )
-            }
-        }
+            },
+        )
 
         // ── Content ───────────────────────────────────────────────────────────
         when {
             state.isLoading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Primary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
             state.sessions.isEmpty() -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     EmptyState(
-                        icon = "📋",
+                        icon = Icons.Filled.History,
                         title = "No history yet",
                         subtitle = "Connection events will appear here as devices join and leave your network",
                     )
@@ -147,7 +112,7 @@ fun DeviceHistoryScreen(
             state.filteredSessions.isEmpty() -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     EmptyState(
-                        icon = "🔍",
+                        icon = Icons.Filled.Search,
                         title = "No matches",
                         subtitle = "Try a different name, MAC address, or IP",
                     )
@@ -160,9 +125,10 @@ fun DeviceHistoryScreen(
                 ) {
                     items(
                         items = groupedByDevice,
-                        key = { it.first.macAddress }
+                        key = { it.first.deviceId ?: it.first.macAddress }
                     ) { (latestSession, sessions) ->
-                        val isExpanded = expandedMacs.contains(latestSession.macAddress)
+                        val deviceKey = latestSession.deviceId ?: latestSession.macAddress
+                        val isExpanded = expandedDeviceKeys.contains(deviceKey)
                         
                         DeviceHistoryAccordionCard(
                             latestSession = latestSession,
@@ -171,8 +137,8 @@ fun DeviceHistoryScreen(
                             dayFormatter = dayFormatter,
                             timeFormatter = timeFormatter,
                             onToggleExpand = {
-                                if (isExpanded) expandedMacs.remove(latestSession.macAddress)
-                                else expandedMacs.add(latestSession.macAddress)
+                                if (isExpanded) expandedDeviceKeys.remove(deviceKey)
+                                else expandedDeviceKeys.add(deviceKey)
                             },
                             onNavigateToDetail = { onDeviceClick(latestSession.macAddress) }
                         )
@@ -200,7 +166,7 @@ private fun DeviceHistoryAccordionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(SurfaceCard)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .animateContentSize()
     ) {
         // ── Header Row (Always visible) ───────────────────────────────────────
@@ -212,16 +178,21 @@ private fun DeviceHistoryAccordionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Device Type Emoji Badge
+            // Device type badge
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceVariant.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
                     .clickable { onNavigateToDetail() }, // Click icon to go to detail
                 contentAlignment = Alignment.Center,
             ) {
-                Text("📱", fontSize = 22.sp)
+                Icon(
+                    imageVector = Icons.Filled.Devices,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
             }
 
             // Name / MAC
@@ -230,7 +201,7 @@ private fun DeviceHistoryAccordionCard(
                     latestSession.hostname.takeIf { it.isNotBlank() && it != "Unknown" }
                         ?: latestSession.macAddress,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = OnBackground,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -238,7 +209,7 @@ private fun DeviceHistoryAccordionCard(
                 Text(
                     latestSession.macAddress,
                     style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -247,20 +218,20 @@ private fun DeviceHistoryAccordionCard(
             // Right-side Status & Chevron
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (latestSession.isActive) {
-                    Surface(color = DeviceOnline.copy(0.15f), shape = RoundedCornerShape(8.dp)) {
+                    Surface(color = AppColors.online.copy(0.15f), shape = RoundedCornerShape(8.dp)) {
                         Text(
                             "Active Now",
                             style = MaterialTheme.typography.labelSmall,
-                            color = DeviceOnline,
+                            color = AppColors.online,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
                 } else {
-                    Surface(color = SurfaceVariant, shape = RoundedCornerShape(8.dp)) {
+                    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp)) {
                         Text(
                             "${sessions.size} sessions",
                             style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
@@ -269,7 +240,7 @@ private fun DeviceHistoryAccordionCard(
                 Icon(
                     Icons.Default.KeyboardArrowDown,
                     contentDescription = "Expand",
-                    tint = OnSurfaceVariant.copy(0.7f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(20.dp)
                         .rotate(rotation)
@@ -285,7 +256,7 @@ private fun DeviceHistoryAccordionCard(
                     .padding(horizontal = 14.dp)
                     .padding(bottom = 14.dp)
             ) {
-                HorizontalDivider(color = SurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -295,7 +266,7 @@ private fun DeviceHistoryAccordionCard(
                     Text(
                         "Recent Sessions",
                         style = MaterialTheme.typography.labelMedium,
-                        color = OnSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold
                     )
                     
@@ -304,7 +275,11 @@ private fun DeviceHistoryAccordionCard(
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.height(24.dp)
                     ) {
-                        Text("View Device Info", fontSize = 12.sp, color = Primary)
+                        Text(
+                            "View Device Info",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
 
@@ -343,14 +318,14 @@ private fun SessionRow(
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (session.isActive) DeviceOnline else Primary.copy(0.5f))
+                    .background(if (session.isActive) AppColors.online else MaterialTheme.colorScheme.primary.copy(0.5f))
             )
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(1.dp)
                         .height(36.dp) // Approximate height for the connector
-                        .background(SurfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
             }
         }
@@ -360,21 +335,37 @@ private fun SessionRow(
             Text(
                 dayFormatter.format(session.connectedAt),
                 style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
             Spacer(Modifier.height(2.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowUpward,
+                    contentDescription = null,
+                    tint = AppColors.online,
+                    modifier = Modifier.size(13.dp),
+                )
                 Text(
-                    "⬆ ${timeFormatter.format(session.connectedAt)}",
+                    text = timeFormatter.format(session.connectedAt),
                     style = MaterialTheme.typography.labelSmall,
-                    color = DeviceOnline.copy(0.9f),
+                    color = AppColors.online,
                 )
                 if (session.disconnectedAt != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDownward,
+                        contentDescription = null,
+                        tint = AppColors.offline,
+                        modifier = Modifier.size(13.dp),
+                    )
                     Text(
-                        "⬇ ${timeFormatter.format(session.disconnectedAt!!)}",
+                        text = timeFormatter.format(session.disconnectedAt!!),
                         style = MaterialTheme.typography.labelSmall,
-                        color = DeviceOffline.copy(0.9f),
+                        color = AppColors.offline,
                     )
                 }
             }
@@ -386,21 +377,20 @@ private fun SessionRow(
                 Text(
                     "Active",
                     style = MaterialTheme.typography.labelSmall,
-                    color = DeviceOnline,
+                    color = AppColors.online,
                     fontWeight = FontWeight.Bold
                 )
             } else {
                 Text(
                     session.formattedDuration,
                     style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 session.ipAddress,
                 style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                color = OnSurfaceVariant.copy(0.6f),
-                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

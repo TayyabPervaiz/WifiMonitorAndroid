@@ -20,6 +20,7 @@ data class SettingsUiState(
     val soundEnabled: Boolean = true,
     val darkTheme: Boolean = true,
     val useDynamicColor: Boolean = false,
+    val autoBlockUnknownDevices: Boolean = false,
     val saveSuccess: Boolean = false,
 )
 
@@ -55,14 +56,21 @@ class SettingsViewModel @Inject constructor(
                 preferences.soundEnabled,
                 preferences.darkTheme,
                 preferences.useDynamicColor,
-            ) { sound, dark, dynamic ->
+                preferences.autoBlockUnknownDevices,
+            ) { sound, dark, dynamic, autoBlock ->
                 _state.update { it.copy(
                     soundEnabled = sound,
                     darkTheme = dark,
                     useDynamicColor = dynamic,
+                    autoBlockUnknownDevices = autoBlock,
                 )}
             }.collect()
         }
+    }
+
+    fun setAutoBlockUnknownDevices(enabled: Boolean) {
+        _state.update { it.copy(autoBlockUnknownDevices = enabled) }
+        viewModelScope.launch { preferences.setAutoBlockUnknownDevices(enabled) }
     }
 
     fun setPollingInterval(secs: Long) {
