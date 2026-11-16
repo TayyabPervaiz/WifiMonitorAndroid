@@ -118,6 +118,9 @@ class NetworkScanService : Service() {
                         }
                     }
 
+                    // Check and auto-unblock any expired timed blocks as active backup
+                    repository.checkAndProcessExpiredTimedBlocks()
+
                     // Wait for the configured interval before next scan
                     delay(intervalSecs * 1000L)
                 } catch (e: CancellationException) {

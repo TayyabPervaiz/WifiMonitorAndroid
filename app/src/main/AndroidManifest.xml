@@ -11,6 +11,11 @@
     <!-- Notification permission (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Alarm & WakeLock permissions for reliable timed unblocking -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- WorkManager / Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -38,7 +43,7 @@
             </intent-filter>
         </activity>
 
-        <!-- WorkManager Worker -->
+        <!-- Disable default WorkManagerInitializer so WifiMonitorApp (HiltWorkerFactory) is used -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -46,8 +51,14 @@
             tools:node="merge">
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup" />
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
+
+        <!-- Timed Block Alarm Receiver for exact unblocking -->
+        <receiver
+            android:name=".service.TimedBlockReceiver"
+            android:exported="false" />
 
         <!-- Device Count Widget -->
         <receiver

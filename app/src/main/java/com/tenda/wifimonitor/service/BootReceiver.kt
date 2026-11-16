@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.tenda.wifimonitor.data.AppPreferences
+import com.tenda.wifimonitor.data.repository.DeviceRepository
 
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
     @Inject lateinit var preferences: AppPreferences
+    @Inject lateinit var repository: DeviceRepository
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
@@ -21,9 +23,10 @@ class BootReceiver : BroadcastReceiver() {
                 val enabled = preferences.isMonitoringEnabled.firstOrNull() ?: true
                 val interval = preferences.pollingIntervalSecs.firstOrNull() ?: 30L
                 if (enabled) {
-                    NetworkMonitorWorker.schedule(context, interval)
+                    NetworkMonitorWorker.schedule(context)
                     NetworkScanService.start(context)
                 }
+                repository.checkAndProcessExpiredTimedBlocks()
             }
         }
     }

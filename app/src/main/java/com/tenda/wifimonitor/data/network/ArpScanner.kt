@@ -1,6 +1,10 @@
 package com.tenda.wifimonitor.data.network
 
 import android.util.Log
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
 import java.io.BufferedReader
 import java.io.FileReader
 import java.net.InetAddress
@@ -16,6 +20,10 @@ import javax.inject.Singleton
 class ArpScanner @Inject constructor() {
 
     private val TAG = "ArpScanner"
+
+    // 5-minute TTL hostname resolution cache to avoid repeated slow reverse-DNS lookups
+    private val hostnameCache = mutableMapOf<String, Pair<String, Long>>()
+    private val cacheTtlMs = 5 * 60 * 1000L
 
     /**
      * Reads /proc/net/arp and returns all valid (non-null MAC) entries.
@@ -60,26 +68,37 @@ class ArpScanner @Inject constructor() {
      * Uses a short timeout (200ms) per host.
      */
     suspend fun pingSweep(subnet: String = "192.168.0", onProgress: (Int) -> Unit = {}) {
-        val threads = mutableListOf<Thread>()
-        for (i in 1..254) {
-            val ip = "$subnet.$i"
-            val t = Thread {
-                try {
-                    InetAddress.getByName(ip).isReachable(200)
-                } catch (_: Exception) {}
+        coroutineScope {
+            val semaphore = Semaphore(32)
+            val deferreds = (1..254).map { i ->
+                async {
+                    semaphore.acquire()
+                    try {
+                        val ip = "$subnet.$i"
+                        try {
+                            InetAddress.getByName(ip).isReachable(200)
+                        } catch (_: Exception) {}
+                    } finally {
+                        semaphore.release()
+                    }
+                    if (i % 25 == 0) onProgress(i)
+                }
             }
-            t.start()
-            threads.add(t)
-            if (i % 25 == 0) onProgress(i)
+            deferreds.awaitAll()
         }
-        threads.forEach { it.join(300) }
     }
 
     private fun tryResolveHostname(ip: String): String {
+        val now = System.currentTimeMillis()
+        hostnameCache[ip]?.let { (name, timestamp) ->
+            if (now - timestamp < cacheTtlMs) return name
+        }
         return try {
             val addr = InetAddress.getByName(ip)
             val name = addr.canonicalHostName
-            if (name == ip) "Unknown" else name
+            val resolved = if (name == ip) "Unknown" else name
+            hostnameCache[ip] = resolved to now
+            resolved
         } catch (_: Exception) {
             "Unknown"
         }

@@ -1,11 +1,14 @@
 package com.tenda.wifimonitor.service
 
+import android.app.ActivityManager
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.tenda.wifimonitor.data.AppPreferences
 import com.tenda.wifimonitor.data.repository.DeviceRepository
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import com.tenda.wifimonitor.widget.DeviceCountWidget
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.firstOrNull
@@ -24,10 +27,20 @@ class NetworkMonitorWorker @AssistedInject constructor(
         const val TAG = "NetworkMonitorWorker"
         const val WORK_NAME = "network_monitor"
 
-        fun schedule(context: Context, intervalSeconds: Long) {
+        /**
+         * Schedules the worker as a low-frequency backup scanner.
+         *
+         * NOTE: androidx.work enforces a hard minimum repeat interval of 15 minutes
+         * for PeriodicWorkRequest, regardless of the value passed here. The
+         * foreground [NetworkScanService] is the primary scanner and honors the
+         * user's configured polling interval (default 30 s). This worker only steps
+         * in via [doWork] when the foreground service is NOT running, so it does
+         * not duplicate the service's API calls.
+         */
+        fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<NetworkMonitorWorker>(
-                repeatInterval = intervalSeconds.coerceAtLeast(15),
-                repeatIntervalTimeUnit = TimeUnit.SECONDS,
+                repeatInterval = 15,
+                repeatIntervalTimeUnit = TimeUnit.MINUTES,
             )
                 .setConstraints(Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -41,7 +54,7 @@ class NetworkMonitorWorker @AssistedInject constructor(
                 ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
-            Log.d(TAG, "Scheduled monitor every ${intervalSeconds}s")
+            Log.d(TAG, "Scheduled monitor (backup path, runs only when the foreground service is down)")
         }
 
         fun cancel(context: Context) {
@@ -51,6 +64,12 @@ class NetworkMonitorWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        // Backup path: only scan if the foreground service is NOT running.
+        if (isForegroundScanServiceRunning(applicationContext)) {
+            Log.d(TAG, "Foreground scan service is running — skipping backup scan")
+            return Result.success()
+        }
+
         return try {
             val enabled = preferences.isMonitoringEnabled.firstOrNull() ?: true
             if (!enabled) return Result.success()
@@ -89,11 +108,29 @@ class NetworkMonitorWorker @AssistedInject constructor(
         }
     }
 
-    private fun updateWidget() {
-        // Trigger Glance widget update
+    /**
+     * Checks whether the foreground [NetworkScanService] is currently running,
+     * so this backup worker avoids duplicating its scans.
+     */
+    private fun isForegroundScanServiceRunning(context: Context): Boolean {
+        return try {
+            val manager =
+                context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            manager.getRunningServices(Integer.MAX_VALUE).any { info ->
+                info.service.className.endsWith("NetworkScanService")
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private suspend fun updateWidget() {
         try {
-            val intent = android.content.Intent("com.tenda.wifimonitor.UPDATE_WIDGET")
-            applicationContext.sendBroadcast(intent)
+            val manager = GlanceAppWidgetManager(applicationContext)
+            val glanceIds = manager.getGlanceIds(DeviceCountWidget::class.java)
+            glanceIds.forEach { id ->
+                DeviceCountWidget().update(applicationContext, id)
+            }
         } catch (_: Exception) {}
     }
 }

@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.tenda.wifimonitor.MainActivity
 import com.tenda.wifimonitor.R
+import com.tenda.wifimonitor.data.AppPreferences
 import com.tenda.wifimonitor.domain.model.NetworkDevice
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -21,19 +22,18 @@ import javax.inject.Singleton
 
 @Singleton
 class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val preferences: AppPreferences
 ) {
     companion object {
         const val CHANNEL_NEW_DEVICE = "new_device"
         const val CHANNEL_INTRUDER = "intruder_alert"
         const val CHANNEL_MONITORING = "monitoring_service"
+        const val CHANNEL_TIMED_BLOCK = "timed_block"
         private const val TAG = "NotificationHelper"
     }
 
-    // Track which MACs we've already notified about in this app session
-    // to prevent duplicate notifications across rapid scans.
-    private val notifiedNewDevices = mutableSetOf<String>()
-    private val notifiedIntruders = mutableSetOf<String>()
+    private val cooldownMs = 5 * 60 * 1000L
 
     fun createNotificationChannels() {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -59,6 +59,12 @@ class NotificationHelper @Inject constructor(
             "Background Monitoring",
             NotificationManager.IMPORTANCE_LOW
         ).apply { description = "Persistent notification for network monitoring" })
+
+        manager.createNotificationChannel(NotificationChannel(
+            CHANNEL_TIMED_BLOCK,
+            "Timer & Auto-Unblock",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply { description = "Notifies when a device block timer elapses and device is unblocked" })
     }
 
     /**
@@ -72,9 +78,12 @@ class NotificationHelper @Inject constructor(
         } else true
     }
 
-    fun notifyNewDevice(device: NetworkDevice, soundEnabled: Boolean = true) {
-        // Skip if already notified for this MAC in this session
-        if (!notifiedNewDevices.add(device.macAddress)) {
+    suspend fun notifyNewDevice(device: NetworkDevice, soundEnabled: Boolean = true) {
+        // Skip if already notified within the cooldown period
+        val now = System.currentTimeMillis()
+        val key = "new:${device.macAddress}"
+        val lastNotified = preferences.getLastNotified(key) ?: 0L
+        if (now - lastNotified < cooldownMs) {
             Log.d(TAG, "Already notified new device: ${device.macAddress}")
             return
         }
@@ -112,15 +121,19 @@ class NotificationHelper @Inject constructor(
 
         try {
             NotificationManagerCompat.from(context).notify(notifId, notif)
+            preferences.setLastNotified(key, now)
             Log.d(TAG, "Sent new-device notification for ${device.macAddress}")
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException sending notification: ${e.message}")
         }
     }
 
-    fun notifyIntruder(device: NetworkDevice, soundEnabled: Boolean = true) {
-        // Skip if already notified for this MAC in this session
-        if (!notifiedIntruders.add(device.macAddress)) {
+    suspend fun notifyIntruder(device: NetworkDevice, soundEnabled: Boolean = true) {
+        // Skip if already notified within the cooldown period
+        val now = System.currentTimeMillis()
+        val key = "intruder:${device.macAddress}"
+        val lastNotified = preferences.getLastNotified(key) ?: 0L
+        if (now - lastNotified < cooldownMs) {
             Log.d(TAG, "Already notified intruder: ${device.macAddress}")
             return
         }
@@ -142,12 +155,18 @@ class NotificationHelper @Inject constructor(
 
         val notifId = ("intruder_" + device.macAddress).hashCode()
 
+        val title = if (device.isBlocked) "🛡️ Auto-Blocked Device: ${device.displayName}" else "🚨 Unknown Device on Network!"
+        val bigText = if (device.isBlocked) {
+            "A blocked or unknown device connected and was automatically blocked on the router.\n\nMAC: ${device.macAddress}\nIP: ${device.ipAddress}\nMaker: ${device.manufacturer}\n\nTap to review or unblock."
+        } else {
+            "An unrecognized device connected!\n\nMAC: ${device.macAddress}\nIP: ${device.ipAddress}\nMaker: ${device.manufacturer}\n\nTap to review and block."
+        }
+
         val notif = NotificationCompat.Builder(context, CHANNEL_INTRUDER)
             .setSmallIcon(R.drawable.ic_warning)
-            .setContentTitle("🚨 Unknown Device on Network!")
+            .setContentTitle(title)
             .setContentText("${device.macAddress} (${device.ipAddress})")
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("An unrecognized device connected!\n\nMAC: ${device.macAddress}\nIP: ${device.ipAddress}\nMaker: ${device.manufacturer}\n\nTap to review and block."))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setContentIntent(pi)
             .setAutoCancel(true)
             .setSilent(!soundEnabled)
@@ -157,6 +176,7 @@ class NotificationHelper @Inject constructor(
 
         try {
             NotificationManagerCompat.from(context).notify(notifId, notif)
+            preferences.setLastNotified(key, now)
             Log.d(TAG, "Sent intruder notification for ${device.macAddress}")
         } catch (e: SecurityException) {
             Log.e(TAG, "SecurityException sending intruder notification: ${e.message}")
@@ -167,9 +187,9 @@ class NotificationHelper @Inject constructor(
      * Clears the duplicate-tracking sets. Call when a device goes offline
      * so it can trigger a new notification if it reconnects later.
      */
-    fun clearNotifiedDevice(mac: String) {
-        notifiedNewDevices.remove(mac)
-        notifiedIntruders.remove(mac)
+    suspend fun clearNotifiedDevice(mac: String) {
+        preferences.removeNotified("new:$mac")
+        preferences.removeNotified("intruder:$mac")
     }
 
     fun buildMonitoringNotification() = NotificationCompat.Builder(context, CHANNEL_MONITORING)
@@ -179,4 +199,38 @@ class NotificationHelper @Inject constructor(
         .setOngoing(true)
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
+
+    fun notifyTimedUnblock(deviceName: String, mac: String, soundEnabled: Boolean = true) {
+        if (!hasNotificationPermission()) return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("mac", mac)
+        }
+        val pi = PendingIntent.getActivity(
+            context, mac.hashCode() + 2, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notifId = ("timed_unblock_" + mac).hashCode()
+
+        val notif = NotificationCompat.Builder(context, CHANNEL_TIMED_BLOCK)
+            .setSmallIcon(R.drawable.ic_wifi)
+            .setContentTitle("⏰ Timer Expired: Device Unblocked")
+            .setContentText("$deviceName has been unblocked.")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("The block timer for $deviceName ($mac) has elapsed. Internet access has been automatically restored."))
+            .setContentIntent(pi)
+            .setAutoCancel(true)
+            .setSilent(!soundEnabled)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(notifId, notif)
+            Log.d(TAG, "Sent timed-unblock notification for $mac")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException sending notification: ${e.message}")
+        }
+    }
 }
